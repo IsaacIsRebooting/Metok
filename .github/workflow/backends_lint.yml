@@ -1,0 +1,77 @@
+# 定义GitHub Actions工作流名称
+name: Lint Backend Code
+
+# 运行时显示的工作流名称，包含工作流名称和Pull Request编号
+run-name: 'Lint Backend Code ${{github.workflow}} #${{ github.event.pull_request.number }}'
+
+# 触发此工作流的事件
+on:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]  # 指定触发事件类型
+    branches: [main, master]  # 指定触发分支
+    paths:
+      - 'backend/**'  # 指定触发路径
+
+# 并发控制设置
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+
+# 工作流权限设置
+permissions:
+  pull-requests: write
+
+# 定义工作流中的任务
+jobs:
+  build:
+    # 指定运行环境
+    runs-on: ubuntu-latest
+
+    # 定义构建矩阵，允许并行执行多个项目
+    strategy:
+      matrix:
+        project: [
+          'backend/gopkgs',
+          'backend/baseService',
+          'backend/shortVideoApiService',
+          'backend/shortVideoCoreService'
+        ]
+      fail-fast: false  # 如果一个任务失败，其他任务继续执行
+
+    # 定义任务步骤
+    steps:
+      - uses: actions/checkout@v4  # 检出代码仓库
+        with:
+          lfs: true  # 启用Git LFS支持
+
+      - name: Setup reviewdog  # 设置reviewdog工具
+        uses: reviewdog/action-setup@v1
+
+      - name: Setup  # 设置Node.js环境
+        uses: actions/setup-node@v3
+        with:
+          go-version: 1.22  # 指定Go版本
+
+      - name: Build ${{ matrix.project }}  # 清理并同步依赖
+        run: cd ${{ matrix.project }} && go mod tidy
+
+      - uses: reviewdog/action-golangci-lint@v2  # 使用golangci-lint进行代码检查
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          golangci_lint_flags: "--timeout 10m --exclude-use-default=false --exclude-generated=true"  # 设置golangci-lint参数
+          fail_on_error: false  # 不在错误时失败
+          reporter: "github-pr-check"  # 报告结果到GitHub PR
+          tool_name: "golangci-lint-github-pr-review"
+          filter_mode: nofilter  # 不过滤任何问题
+          workdir: ${{ matrix.project }}  # 指定工作目录
+          level: "error"  # 只报告错误级别问题
+
+      - name: Build ${{ matrix.project }}  # 编译项目
+        run: cd ${{ matrix.project }} && go build -v ./...
+
+      - name: Test ${{ matrix.project }}  # 运行测试
+        run: cd ${{ matrix.project }} && go test -v ./... -race -coverprofile=coverage.out -covermode=atomic
+
+      - name: Upload coverage to Codecov  # 上传测试覆盖率报告到Codecov
+        uses: codecov/codecov-action@v4

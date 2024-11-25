@@ -1,0 +1,252 @@
+# 定义工作流名称
+name: Lint Frontend Code
+
+# 定义运行名称，包含工作流名称和拉取请求编号
+run-name: 'Lint Frontend Code ${{github.workflow}} #${{ github.event.pull_request.number }}'
+
+# 触发条件
+on:
+    pull_request:
+        # 拉取请求类型
+        types: [assigned, opened, synchronize, reopened]
+        # 监听的分支
+        branches: [main, master]
+        # 监听的路径
+        paths:
+            - 'frontend/**'
+
+# 并发控制
+concurrency:
+    # 并发组名称
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+    # 取消正在进行的任务
+    cancel-in-progress: true
+
+# 权限设置
+permissions:
+    pull-requests: write
+
+# 定义任务
+jobs:
+    lint:
+        # 运行环境
+        runs-on: ubuntu-latest
+        # 矩阵策略
+        strategy:
+            matrix:
+                project: ['frontend/doutok']
+        steps:
+            # 检出代码
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  lfs: true
+
+            # 切换目录
+            - name: cd
+              run: |
+                  cd ${{ matrix.project }}
+
+            # 获取当前时间
+            - name: Get date time
+              id: getDateTime
+              run: echo "result=$(TZ=Asia/Shanghai date)" >> "$GITHUB_OUTPUT"
+
+            # 初始化 pnpm
+            - name: Init pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+
+            # 设置 Node.js 环境
+            - name: Init node
+              id: node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: 'pnpm'
+                  cache-dependency-path: ${{ matrix.project }}/pnpm-lock.yaml
+
+            # 安装依赖
+            - name: Install dependencies
+              if: steps.node.outputs.cache-hit != 'true'
+              run: cd ${{ matrix.project }} && pnpm install
+
+            # 运行 ESLint
+            - name: Run ES lint
+              id: eslint
+              uses: actions/github-script@v7
+              with:
+                  result-encoding: string
+                  script: |
+                      // 执行 Git 命令获取差异文件
+                      await exec.exec(
+                        `git fetch`,
+                        [],
+                        {}
+                      );
+
+                      await exec.exec(
+                        `git diff --name-only --diff-filter=d origin/${{github.base_ref}}`,
+                        [],
+                        {
+                          listeners: {
+                            stdout: (data) => {
+                                diffFiles += data.toString();
+                            },
+                          },
+                        }
+                      );
+
+                      // 过滤出 JavaScript 和 TypeScript 文件
+                      const lintFiles = diffFiles.split(`\n`).filter((file) => {
+                        return file.endsWith('.js') || file.endsWith('.ts') || file.endsWith('.tsx')
+                      }).join(' ');
+
+                      // 执行 ESLint
+                      await exec.exec(
+                        `pnpm eslint ${lintFiles}`,
+                        [],
+                        {
+                          ignoreReturnCode: true,
+                          listeners: {
+                            stdout: (data) => {
+                                output += data.toString();
+                            },
+                            stderr: (data) => {
+                                outerr += data.toString();
+                            },
+                          },
+                        }
+                      );
+
+                      // 处理输出结果
+                      if (outerr) {
+                        return `:x: Command execution failed.`;
+                      }
+
+                      const errorMatch = output.match(/(\d+) errors?/);
+                      const warnMatch = output.match(/(\d+) warnings?/);
+
+                      if (errorMatch && errorMatch?.[1] !== '0') {
+                        return `
+                        :x: ${errorMatch?.[0]} ${warnMatch?.[0]}.
+
+                        <details><summary>Details</summary>
+                        <p>
+
+                        \`\`\`shell
+                        ${output}
+                        \`\`\`
+
+                        </p>
+                        </details>
+                        `;
+                      }
+
+                      return `:white_check_mark: ${errorMatch?.[0] || '0 error'} ${warnMatch?.[0] || '0 warning'}.`;
+
+            # 运行 TypeScript lint
+            - name: Run Typescript lint
+              id: tslint
+              uses: actions/github-script@v7
+              with:
+                  result-encoding: string
+                  script: |
+                      // 执行 TypeScript lint
+                      await exec.exec(
+                        `pnpm run -r lint`,
+                        [],
+                        {
+                          ignoreReturnCode: true,
+                          listeners: {
+                            stdout: (data) => {
+                                output += data.toString();
+                            },
+                            stderr: (data) => {
+                                outerr += data.toString();
+                            },
+                          },
+                        }
+                      );
+
+                      // 处理输出结果
+                      if (outerr) {
+                        return `:x: Command execution failed.`;
+                      }
+
+                      const errorMatch = output.match(/error TS/g);
+
+                      if (errorMatch) {
+                        return `
+                        :x: ${errorMatch?.length} errors.
+
+                        <details><summary>Details</summary>
+                        <p>
+
+                        \`\`\`shell
+                        ${output}
+                        \`\`\`
+
+                        </p>
+                        </details>
+                        `;
+                      }
+
+                      return `:white_check_mark: ${'0 error'}.`;
+
+            # 运行单元测试
+            - name: Unit Test
+              id: ut
+              uses: actions/github-script@v7
+              with:
+                  result-encoding: string
+                  script: |
+                      // 执行单元测试
+                      await exec.exec(
+                        `pnpm run test`,
+                        [],
+                        {
+                          ignoreReturnCode: true,
+                          listeners: {
+                            stdout: (data) => {
+                                output += data.toString();
+                            },
+                            stderr: (data) => {
+                                outerr += data.toString();
+                            },
+                          },
+                        }
+                      );
+
+                      // 处理测试失败的情况
+                      const failMatch = outerr.match(/Test Suites: \d+ failed/);
+
+                      if (failMatch) {
+                        return `
+                        :x: ${failMatch?.[0]}.
+                      
+                        <details><summary>Details</summary>
+                        <p>
+                      
+                        \`\`\`shell
+                        ${outerr.substring(outerr.indexOf('Summary of all failing tests'))}
+                        \`\`\`
+
+                        </p>
+                        </details>
+                        `;
+                      }
+
+                      const errorMatch = outerr.match(/Jest: "global" coverage threshold for lines \([0-9\.]+%\) not met: [0-9\.]+%/);
+
+                      if (errorMatch) {
+                        return `:x: ${errorMatch?.[0]}.`;
+                      }
+
+                      return `:white_check_mark: passed.`;
+
+            # 获取完成时间
+            - name: Get date time for finishing
+              id: getDateTimeForFinishing
+              run: echo "result=$(TZ=Asia/Shanghai date)" >> "$GITHUB_OUTPUT"
