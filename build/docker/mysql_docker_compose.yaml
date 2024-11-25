@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  base_mysql:
+    image: mysql:8.0.33
+    container_name: base_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: zl020613 # 自定义，作为容器内mysql服务root用户的登录密码
+      MYSQL_DATABASE: base_db
+    volumes:
+      - ../../sql/basesvr:/docker-entrypoint-initdb.d
+    ports:
+      - "3307:3306"
+    command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
+
+  short_video_mysql:
+    image: mysql:8.0.33
+    container_name: short_video_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: zl020613 # 自定义，作为容器内mysql服务root用户的登录密码
+      MYSQL_DATABASE: short_video_db
+    volumes:
+      - ../../sql/videosvr:/docker-entrypoint-initdb.d
+    ports:
+      - "3308:3306"
+    command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
