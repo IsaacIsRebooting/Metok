@@ -3,33 +3,6 @@
 CREATE DATABASE IF NOT EXISTS short_video_db;
 USE short_video_db;
 
-CREATE TABLE IF NOT EXISTS template (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `create_time_idx` (`create_time`),
-    INDEX `update_time_idx` (`update_time`),
-    INDEX `title_idx` (`title`)
-);
-
-CREATE TABLE IF NOT EXISTS ile (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    domain_name VARCHAR(100) NOT NULL,
-    biz_name VARCHAR(100) NOT NULL,
-    hash VARCHAR(255) NOT NULL UNIQUE,
-    file_size BIGINT NOT NULL DEFAULT 0,
-    file_type VARCHAR(255) NOT NULL,
-    uploaded BOOLEAN NOT NULL DEFAULT FALSE,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `create_time_idx` (`create_time`),
-    INDEX `update_time_idx` (`update_time`),
-    INDEX `hash_idx` (`hash`)
-);
 
 CREATE TABLE IF NOT EXISTS video (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -45,6 +18,21 @@ CREATE TABLE IF NOT EXISTS video (
     -- 注意：这里不使用外键引用，而是通过应用层逻辑处理关联
     INDEX `created_at_idx` (`created_at`),
     INDEX `updated_at_idx` (`updated_at`)
+);
+CREATE TABLE IF NOT EXISTS user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    account_id BIGINT NOT NULL,
+    name VARCHAR(50),
+    email VARCHAR(100),
+    mobile VARCHAR(20),
+    avatar VARCHAR(255),
+    background_image VARCHAR(255),
+    signature VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `idx_users_account_id` (`account_id`),
+    UNIQUE KEY `idx_users_email` (`email`),
+    UNIQUE KEY `idx_users_mobile` (`mobile`)
 );
 
 -- +goose Down
