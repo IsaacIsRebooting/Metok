@@ -15,22 +15,32 @@ CREATE TABLE IF NOT EXISTS account (
     INDEX `account_mobile_idx` (`mobile`),
     INDEX `account_email_idx` (`email`)
 );
-
-CREATE TABLE IF NOT EXISTS user (
+CREATE TABLE IF NOT EXISTS template (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    account_id BIGINT NOT NULL,
-    name VARCHAR(50),
-    email VARCHAR(100),
-    mobile VARCHAR(20),
-    avatar VARCHAR(255),
-    background_image VARCHAR(255),
-    signature VARCHAR(255),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE,
-    UNIQUE KEY `idx_users_account_id` (`account_id`),
-    UNIQUE KEY `idx_users_email` (`email`),
-    UNIQUE KEY `idx_users_mobile` (`mobile`)
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `create_time_idx` (`create_time`),
+    INDEX `update_time_idx` (`update_time`),
+    INDEX `title_idx` (`title`)
+);
+
+CREATE TABLE IF NOT EXISTS file (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    domain_name VARCHAR(100) NOT NULL,
+    biz_name VARCHAR(100) NOT NULL,
+    hash VARCHAR(255) NOT NULL UNIQUE,
+    file_size BIGINT NOT NULL DEFAULT 0,
+    file_type VARCHAR(255) NOT NULL,
+    uploaded BOOLEAN NOT NULL DEFAULT FALSE,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `create_time_idx` (`create_time`),
+    INDEX `update_time_idx` (`update_time`),
+    INDEX `hash_idx` (`hash`)
 );
 
 CREATE TABLE IF NOT EXISTS config (
@@ -45,4 +55,6 @@ CREATE TABLE IF NOT EXISTS config (
 DROP TABLE IF EXISTS config;
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS account;
+DROP TABLE IF EXISTS template;
+DROP TABLE IF EXISTS file;
 DROP DATABASE IF EXISTS base_db;
