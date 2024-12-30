@@ -1,0 +1,29 @@
+version: "0.1"
+database:
+  # consult[https://gorm.io/docs/connecting_to_the_database.html]"
+  dsn : "root:zl020613@tcp(localhost:3307)/base_db?parseTime=true"
+  # input mysql or postgres or sqlite or sqlserver. consult[https://gorm.io/docs/connecting_to_the_database.html]
+  db  : "mysql"
+  # enter the required data table or leave it blank.You can input : orders,users,goods
+  tables  : 
+    - account
+    - file
+    - template
+  mode:
+    - WithDefaultQuery
+    - WithoutContext
+    - WithQueryInterface
+  # specify a directory for output
+  outPath :  "./internal/data/dal/query"
+  # query code file name, default: gen.go
+  outFile :  "gen.go"
+  # generate unit test for query code
+  withUnitTest  : false
+  # generated model code's package name
+  modelPkgName  : "models"
+  # generate with pointer when field is nullable
+  fieldNullable : true
+  # generate field with gorm index tag
+  fieldWithIndexTag : true
+  # generate field with gorm column type tag
+  fieldWithTypeTag  : true

@@ -3,3 +3,4 @@
 | --- | --- |
 | docs | Documentation changes |
 | makefile | Makefile changes |
+| sql | SQL changes |
