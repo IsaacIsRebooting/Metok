@@ -109,8 +109,8 @@ func (l *Launcher) Run() {
 	// 等待应用运行
 	<-l.run()
 
-	// 执行服务器启动后的处理函数
-	l.runHandlers(l.afterConfigInitHandlers, "start to run handlers after server start")
+	// 执行服务器启动后的处理函数,启动mysql
+	l.runHandlers(l.afterServerStartHandlers, "start to run handlers after server start")
 
 	// 等待关闭信号
 	<-shutdown.FiredCh()
@@ -155,7 +155,6 @@ func (l *Launcher) runInitConfig() {
 
 	// 创建新的组件启动器，并更新Launcher的组件启动器属性
 	l.componentsLauncher = NewComponentsLauncher(cfg)
-
 	// 执行后配置初始化处理程序
 	l.runHandlers(l.afterConfigInitHandlers, "start to run handlers after config init")
 }

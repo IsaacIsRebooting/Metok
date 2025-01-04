@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/IsaacIsRebooting/Metok/backend/gopkgs/components"
+	"github.com/IsaacIsRebooting/Metok/backend/gopkgs/components/consulx"
 	"github.com/IsaacIsRebooting/Metok/backend/gopkgs/components/mysqlx"
 	"github.com/IsaacIsRebooting/Metok/backend/gopkgs/gofer"
 	"github.com/go-kratos/kratos/v2/log"
@@ -46,6 +47,16 @@ func launchWrapper(cfg config.Value, componentsName string) {
 	switch componentsName {
 	case "mysql":
 		launchComponent(cfg, mysqlx.Init)
+	// case "redis":
+	// 	launchComponent(cfg, redisx.Init)
+	// case "minio":
+	// 	launchComponent(cfg, miniox.Init)
+	// case "etcd":
+	// 	launchComponent(cfg, etcdx.Init)
+	case "consul":
+		launchComponent(cfg, consulx.Init)
+		// default:
+		// 	panic("unknown components name: " + componentsName)
 	}
 }
 func launchComponent[T any](cfg config.Value, initMethod func(cfg components.ConfigMap[*T]) (func() error, error)) {

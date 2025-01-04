@@ -1,15 +1,60 @@
+app:
+  name: base-service
+  version: 0.0.1-test
+  trace_endpoint: http://localhost:14268/api/traces # jaeger endpoint
+#  trace_endpoint: http://localhost:4317
+
 server:
-  http:
-    addr: localhost:8000
-    timeout: 1s
   grpc:
-    addr: localhost:9000
-    timeout: 1s
+    addr: 0.0.0.0:8888
+
+components:
+  mysql:
+    default:
+      host: localhost
+      port: 3307
+      dbname: base_db
+      user: root
+      password: zl020613
+  redis:
+    default:
+      dsn: localhost:6379
+      password: root
+  etcd:
+    default:
+      host: localhost
+      port: 2479
+  minio:
+    default:
+      host: localhost
+      port: 9000
+      console_port: 9001
+      access_key: root
+      secret_key: rootroot
+  consul:
+    default:
+      address: localhost:8500
+
 data:
-  database:
-    driver: mysql
-    source: root:zl020613@tcp(127.0.0.1:3307)/base_db?parseTime=True&loc=Local
-  # redis:
-  #   addr: 127.0.0.1:6379
-  #   read_timeout: 0.2s
-  #   write_timeout: 0.2s
+  db_sharding_config:
+    file_shortvideo_short_video:
+      sharding: file_shortvideo_short_video
+      sharding_number: 5
+    file_shortvideo_public:
+      sharding: file_shortvideo_public
+      sharding_number: 5
+  db_sharding_tables:
+    file:
+      domain_name: shortvideo
+      biz_sharding_field_config:
+        short_video:
+          fields:
+            - id
+            - hash
+        public:
+          fields:
+            - id
+            - hash
+
+snowflake:
+  node: 1
