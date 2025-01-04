@@ -52,8 +52,8 @@ func Connect(c *Config) (*api.Client, error) {
 
 func GetClient(ctx context.Context, keys ...string) *api.Client {
 	storeKey := "default"
-	if len(keys) == 0 {
-		return nil
+	if len(keys) != 0 {
+		storeKey = keys[0]
 	}
 	client, ok := globalClientMap.Load(storeKey)
 	if !ok {
@@ -74,16 +74,26 @@ func GetGrpcConn(ctx context.Context, entryPoint string, keys ...string) (*grpc.
 	)
 }
 
+// IsHealth 检查所有客户端的健康状态。
+// 该函数遍历全局客户端映射，对每个客户端执行健康检查。
+// 如果所有客户端都通过健康检查，则返回nil，否则返回错误。
 func IsHealth() (err error) {
+	// 使用Range遍历globalClientMap，对每个客户端进行健康检查。
+	// 注意：这里没有直接返回错误，而是将错误记录日志并继续检查其他客户端。
 	globalClientMap.Range(func(key, value interface{}) bool {
+		// 从映射中获取客户端。
 		client := value.(*api.Client)
+		// 执行健康检查，忽略检查结果，只关注是否有错误发生。
 		_, _, e := client.Health().State("any", nil)
 		if e != nil {
+			// 如果健康检查失败，记录错误日志并停止遍历。
 			log.Errorf("consul health check failed, client key: %s", key)
 			return false
 		}
+		// 如果健康检查成功，记录信息日志并继续遍历。
 		log.Infof("consul %s health check ok", key)
 		return true
 	})
+	// 返回遍历过程中可能发生的错误。
 	return err
 }

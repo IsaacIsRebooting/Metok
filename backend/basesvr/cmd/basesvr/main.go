@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"flag"
+
+	"github.com/IsaacIsRebooting/Metok/backend/basesvr/internal/data/dal/query"
 
 	"github.com/IsaacIsRebooting/Metok/backend/basesvr/internal/conf"
 	"github.com/IsaacIsRebooting/Metok/backend/basesvr/internal/data/utils"
+	"github.com/IsaacIsRebooting/Metok/backend/basesvr/internal/server"
 	"github.com/IsaacIsRebooting/Metok/backend/gopkgs/components/mysqlx"
 	"github.com/IsaacIsRebooting/Metok/backend/gopkgs/launcher"
 
@@ -78,21 +82,26 @@ import (
 // 	}
 // 	defer cleanup()
 
-// 	// start and wait for stop signal
-// 	if err := app.Run(); err != nil {
-// 		panic(err)
-// 	}
-// }
+//		// start and wait for stop signal
+//		if err := app.Run(); err != nil {
+//			panic(err)
+//		}
+//	}
+var flagconf string
 
+func init() {
+	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
+}
 func main() {
+	// 开辟一个配置对象来接收配置信息
 	c := &conf.Config{}
-	launcher.New(
+	launcher.NewLauncher(
 		launcher.WithConfigValue(c),
 		launcher.WithConfigOptions(
-			config.WithSource(file.NewSource("configs/")),
+			config.WithSource(file.NewSource(flagconf)),
 		),
 		launcher.WithAfterServerStartHandler(func() {
-			query.SetDefault(mysqlx.GetDBClient(context.Background()))
+			query.SetDefault(mysqlx.GetDB(context.Background()))
 		}),
 		launcher.WithGrpcServer(func(configValue interface{}) *grpc.Server {
 			cfg, ok := configValue.(*conf.Config)
@@ -103,8 +112,8 @@ func main() {
 			utils.InitDefaultSnowflakeNode(cfg.Snowflake.Node)
 
 			return server.NewGRPCServer(
-				server.WithFileTableShardingConfig(cfg.Data),
-				server.WithDBShardingTablesConfig(cfg.Data.DbShardingTables),
+			// server.WithFileTableShardingConfig(cfg.Data),
+			// server.WithDBShardingTablesConfig(cfg.Data.DbShardingTables),
 			)
 		}),
 	).Run()

@@ -16,6 +16,7 @@ import (
 )
 var(
 	Q = new(Query)
+	Account  *account
 )
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
@@ -34,6 +35,10 @@ type Query struct {
 	Template template
 }
 
+func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
+	*Q = *Use(db, opts...)
+	Account = &Q.Account
+}
 func (q *Query) Available() bool { return q.db != nil }
 
 func (q *Query) clone(db *gorm.DB) *Query {
