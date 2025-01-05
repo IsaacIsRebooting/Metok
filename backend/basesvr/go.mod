@@ -11,7 +11,7 @@ require (
 	github.com/google/wire v0.6.0
 	go.uber.org/automaxprocs v1.5.1
 	google.golang.org/grpc v1.69.2
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.36.1
 	gorm.io/gen v0.3.26
 	gorm.io/gorm v1.25.12
 	gorm.io/plugin/dbresolver v1.5.3
